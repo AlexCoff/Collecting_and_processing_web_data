@@ -26,10 +26,10 @@ if response.ok:
                         repo_data.append(repo)
                         print(data[i]['name'])
                 #Write full data in file
-                with open( 'full_data_to_user_' + user_name + '.json', 'w') as json_file:
+                with open( './Lesson-1/full_data_to_user_' + user_name + '.json', 'w') as json_file:
                         json.dump(data, json_file)
                 #Write only names, urls, create data
-                with open( user_name + '.json', 'w') as json_file:
+                with open( './Lesson-1/'+ user_name + '.json', 'w') as json_file:
                         json.dump(repo_data, json_file)
 
 else:
