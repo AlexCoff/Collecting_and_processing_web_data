@@ -7,7 +7,7 @@ import json
 
 main_link = 'https://api.github.com'
 # user_name = "AlexCoff"
-user_name = input('Please input username on GitHub: ')  # из файла
+user_name = input('Please input username on GitHub: ')  # Ask username in console
 header = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101 Firefox/68.0',
         'Accept':'*/*'}
 response = requests.get(main_link + '/users/' + user_name + '/repos',headers=header)
@@ -21,3 +21,7 @@ if response.ok:
                 print(data[i]['name'])
 else:
         print('Incorrect input, or user not exist')
+
+#Write full data in file
+with open(  user_name + '.json', 'w') as json_file:
+    json.dump(data, json_file)
