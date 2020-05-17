@@ -14,61 +14,80 @@
 # Общий результат можно вывести с помощью dataFrame через pandas.
 from bs4 import BeautifulSoup as bs
 import requests
+from urllib.parse import urlparse, parse_qs
 from pprint import pprint
-vacancy_title = "Python"
-header = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101 Firefox/68.0',
-        'Accept':'*/*'}
-class hh_parser():
+import time
+#vacancy_title = "Python"
 
-    def __init__(self):
-        #some code
-    
-    def func_hh_parse(url):
-        main_link = 'https://hh.ru'
-        params = {'L_is_autosearch':'false',  \
+class hh_parser():
+    def __init__(self,vacancy_title): # init class
+        self.__param = {'L_is_autosearch':'false',  \
                 'area':2, \
                 'text':vacancy_title, \
                 'clusters':'true', \
                 'enable_snippets':'true', \
                 'page': 0 \
                 }
-        html = requests.get(main_link+'/search/vacancy',params=params,headers=header).text
-        soup = bs(html,'lxml')
-        vacancies_block = soup.find('div',{'class':'vacancy-serp'})
-        vacancies_list = vacancies_block.findChildren('div',{'class':'vacancy-serp-item'},recursive=False)
-        vacancies = []
-        for vacancy in vacancies_list:
+        self.__header = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101 Firefox/68.0',
+                'Accept':'*/*'}
+        self.__next_page_status = True
+        self.__main_link = 'https://hh.ru'
+        self.__vac_list = []
+        self.__vac = []
+
+    def __check_next_page(self, p_block): # check if nex page button exist
+        try:
+            p_block.find('a',{'class':'HH-Pager-Controls-Next'})['href']
+        except TypeError:
+            self.__next_page_status = False
+
+    
+    @staticmethod
+    def __vacancies_page_parse(self, vac_block): # create list of vacancy soup blocks
+
+        vac_raw_list = vac_block.findChildren('div',{'class':'vacancy-serp-item'},recursive=False)
+        for i in vac_raw_list:
+            self.__vac_list.append(i)
+    
+    
+    def parse(self):
+        while self.__next_page_status:
+            #some code
+            html = requests.get(self.__main_link+'/search/vacancy',params=self.__param,headers=self.__header).text
+            cur_page = self.__param['page']
+            self.__param['page'] += 1 
+            soup = bs(html,'lxml')
+            main_block = soup.find('div',{'class':'vacancy-serp-wrapper'}) # Select main block
+            vacancies_block = main_block.find('div',{'class':'vacancy-serp'}) # Select only vacancy block
+            pages_block = main_block.find('div',{'data-qa':'pager-block'})  # Select only block with page bar
+            self.__vacancies_page_parse(self, vacancies_block)
+            if pages_block:
+                self.__check_next_page(pages_block)
+                time.sleep(10) # wait 10 sec if next page block found
+            else:
+                self.__next_page_status = False
+            print(f'Page {cur_page} parse complete') 
+
+        self.__vacancy_parser(self) # parce vacancy
+
+    def vac_print(self):
+        pprint(self.__vac)
+
+    @staticmethod    
+    def __vacancy_parser(self):
+        for vacancy in self.__vac_list:
             vacancy_data = {}
             vacancy_name = vacancy.find('div',{'class':'vacancy-serp-item__info'}).getText()
-            vacancy_url = vacancy.find('div',{'class':'resume-search-item__info'}).find('a',{'class':'bloko-link'})['href']
-            vacancy_source = main_link
+            vacancy_url = vacancy.find('div',{'class':'vacancy-serp-item__info'}).find('a',{'class':'bloko-link'})['href']
+            vacancy_source = self.__main_link
             vacancy_salary_raw = vacancy.find('div',{'class':'vacancy-serp-item__sidebar'}).getText()
+            vacancy_data['name'] = vacancy_name
+            vacancy_data['url'] = vacancy_url
+            vacancy_data['source'] = vacancy_source
+            vacancy_data['salary_raw'] = vacancy_salary_raw
+            self.__vac.append(vacancy_data)
 
+a=hh_parser('Системный архитектор')
 
-func_hh_list()    
-func_hh_parse()
-main_link = 'https://hh.ru'
-params = {'quick_filters':'serials'}
-html = requests.get(main_link+'/popular',params=params).text
-
-soup = bs(html,'lxml')
-
-serials_block = soup.find('div',{'class':'selection-list'})
-serials_list = serials_block.findChildren(recursive=False)
-
-
-serials = []
-for serial in serials_list:
-    serial_data = {}
-    serial_link = main_link + serial.find('a',{'class':'selection-film-item-meta__link'})['href']
-    serial_name = serial.find('p').getText()
-    serial_genre = serial.find('span',{'class':'selection-film-item-meta__meta-additional-item'}).find_next_sibling().getText()
-    serial_rating = serial.find('span',{'class':'rating__value'}).getText()
-
-    serial_data['name'] = serial_name
-    serial_data['link'] = serial_link
-    serial_data['genre'] = serial_genre
-    serial_data['rating'] = float(serial_rating)
-    serials.append(serial_data)
-
-pprint(serials)
+a.parse()
+a.vac_print()
