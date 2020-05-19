@@ -33,7 +33,7 @@ class parser():
                 'Accept':'*/*'}
         self.__next_page_status = True
         self.__main_link_hh = 'https://hh.ru'
-        self.__main_link_sj = 'https://russia.superjob.ru'
+        self.__main_link_sj = 'https://spb.superjob.ru'
         self.__vac_list_hh = []
         self.__vac_list_sj = []
         self.__vac = []
@@ -50,6 +50,11 @@ class parser():
             self.__next_page_url = p_block.find('a',{'class':'icMQ_ _1_Cht _3ze9n f-test-button-dalshe f-test-link-Dalshe'})['href']
         except TypeError:
             self.__next_page_status = False
+    
+    @staticmethod
+    def __parse_salary(self,sal_raw):
+        sal_split = sal_raw.split()
+    
     
     @staticmethod
     def __vacancies_page_parse(self, vac_block): # create list of vacancy soup blocks
@@ -105,7 +110,7 @@ class parser():
             self.__vacancies_page_parse(self, vacancies_block)
             if pages_block:
                 self.__check_next_page(pages_block)
-                time.sleep(3) # wait 10 sec if next page block found
+                time.sleep(3) # wait 3 sec if next page block found
             else:
                 self.__next_page_status = False
             print(f'Page {cur_page} parse complete hh') 
@@ -132,7 +137,7 @@ class parser():
             self.__next_page_status = True
             if pages_block:
                 self.__check_next_page_sj(main_block)
-                time.sleep(3) # wait 10 sec if next page block found
+                time.sleep(3) # wait 3 sec if next page block found
             else:
                 self.__next_page_status = False
             print(f'Page {cur_page} parse complete sj') 
