@@ -17,6 +17,8 @@ import requests
 from urllib.parse import urlparse, parse_qs
 from pprint import pprint
 import time
+import re
+import pandas as pd
 #vacancy_title = "Python"
 
 class parser():
@@ -52,9 +54,30 @@ class parser():
             self.__next_page_status = False
     
     @staticmethod
-    def __parse_salary(self,sal_raw):
-        sal_split = sal_raw.split()
-    
+    def __parse_salary(sal_raw):
+        salar_dict = {}
+        if re.search("договор",sal_raw):
+            salar_dict['min'] = None
+            salar_dict['max'] = None
+            salar_dict['cur'] = None
+        elif re.match('от',sal_raw):
+            salar_dict['min'] = int(re.sub(r'\s+','',re.split(r'([а-я,А-Я,A-Z,a-z]+\.*\s*[а-я,А-Я,A-Z,a-z]*\.*)',sal_raw)[2]))
+            salar_dict['max'] = None
+            salar_dict['cur'] = re.split(r'([а-я,А-Я,A-Z,a-z]+\.*\s*[а-я,А-Я,A-Z,a-z]*\.*)',sal_raw)[3]
+        elif re.match('до',sal_raw):
+            salar_dict['min'] = None
+            salar_dict['max'] = int(re.sub(r'\s+','',re.split(r'([а-я,А-Я,A-Z,a-z]+\.*\s*[а-я,А-Я,A-Z,a-z]*\.*)',sal_raw)[2]))
+            salar_dict['cur'] = re.split(r'([а-я,А-Я,A-Z,a-z]+\.*\s*[а-я,А-Я,A-Z,a-z]*\.*)',sal_raw)[3]
+        elif '-' in sal_raw:
+            salar_dict['min'] = int(re.sub(r'\s+','',re.split('-',sal_raw)[0]))
+            salar_dict['max'] = int(re.sub(r'\s+','',re.split(r'([а-я,А-Я,A-Z,a-z]+\.*\s*[а-я,А-Я,A-Z,a-z]*\.*)',re.split('-',sal_raw)[1])[0]))
+            salar_dict['cur'] = re.split(r'([а-я,А-Я,A-Z,a-z]+\.*\s*[а-я,А-Я,A-Z,a-z]*\.*)',sal_raw)[1]
+        else:
+            salar_dict['min'] = None
+            salar_dict['max'] = None
+            salar_dict['cur'] = None
+        return salar_dict
+   
     
     @staticmethod
     def __vacancies_page_parse(self, vac_block): # create list of vacancy soup blocks
@@ -74,26 +97,35 @@ class parser():
         for vacancy in self.__vac_list_hh:
             vacancy_data = {}
             vacancy_name = vacancy.find('div',{'class':'vacancy-serp-item__info'}).getText()
-            vacancy_url = vacancy.find('div',{'class':'vacancy-serp-item__info'}).find('a',{'class':'bloko-link'})['href']
+            vacancy_url = self.__main_link_hh + vacancy.find('div',{'class':'vacancy-serp-item__info'}).find('a',{'class':'bloko-link'})['href']
             vacancy_source = self.__main_link_hh
             vacancy_salary_raw = vacancy.find('div',{'class':'vacancy-serp-item__sidebar'}).getText()
+            salary_parsed = self.__parse_salary(vacancy_salary_raw)
             vacancy_data['name'] = vacancy_name
             vacancy_data['url'] = vacancy_url
             vacancy_data['source'] = vacancy_source
             vacancy_data['salary_raw'] = vacancy_salary_raw
+            vacancy_data['salary_min'] = salary_parsed['min']
+            vacancy_data['salary_max'] = salary_parsed['max']
+            vacancy_data['salary_cur'] = salary_parsed['cur']
             self.__vac.append(vacancy_data)
     @staticmethod
     def __vacancy_parser_sj(self):
         for vacancy in self.__vac_list_sj:
             vacancy_data = {}
             vacancy_name = vacancy.find('div',{'class':'_3mfro'}).getText()
-            vacancy_url = vacancy.find('div',{'class':'_3mfro'}).find('a')['href']
+            vacancy_url = self.__main_link_sj + vacancy.find('div',{'class':'_3mfro'}).find('a')['href']
             vacancy_source = self.__main_link_sj
             vacancy_salary_raw = vacancy.find('span',{'class':'_3mfro'}).getText()
+            salary_parsed = self.__parse_salary(vacancy_salary_raw)
             vacancy_data['name'] = vacancy_name
             vacancy_data['url'] = vacancy_url
             vacancy_data['source'] = vacancy_source
             vacancy_data['salary_raw'] = vacancy_salary_raw
+            vacancy_data['salary_min'] = salary_parsed['min']
+            vacancy_data['salary_max'] = salary_parsed['max']
+            vacancy_data['salary_cur'] = salary_parsed['cur']
+
             self.__vac.append(vacancy_data)
     
     def parse_hh(self):
@@ -113,7 +145,7 @@ class parser():
                 time.sleep(3) # wait 3 sec if next page block found
             else:
                 self.__next_page_status = False
-            print(f'Page {cur_page} parse complete hh') 
+            print(f'Page {cur_page+1} parse complete hh') 
 
         self.__vacancy_parser(self) # parce vacancy
 
@@ -131,8 +163,8 @@ class parser():
             
             soup = bs(html,'lxml')
             main_block = soup.find('div',{'class':'_1Ttd8 _2CsQi'}) # Select main block
-            vacancies_block = main_block.find('div',{'class':'_3zucV undefined'}).find('div',{'style':'display:block'}) # Select only vacancy block
-            pages_block = main_block.find('div',{'class':'_3zucV undefined IvtLL'})  # Select only block with page bar
+            vacancies_block = main_block.find('div',{'class':'_1ID8B'}).find('div',{'style':'display:block'}) # Select only vacancy block
+            pages_block = main_block.find('div',{'class':'_3zucV L1p51 undefined _2guZ- _GJem'})  # Select only block with page bar
             self.__vacancies_page_parse_sj(self, vacancies_block)
             self.__next_page_status = True
             if pages_block:
@@ -146,9 +178,16 @@ class parser():
 
     def vac_print(self):
         pprint(self.__vac)
+    def get(self):
+        return self.__vac
 
-a=parser('Python')
+a=parser('Менеджер')
 
 a.parse_sj()
 a.parse_hh()
 a.vac_print()
+df = pd.DataFrame(a.get())
+
+df.to_pickle('./Lesson-2/dump.pkl')
+
+
