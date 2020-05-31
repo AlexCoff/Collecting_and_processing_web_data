@@ -2,6 +2,7 @@
 import scrapy
 from scrapy.http import HtmlResponse
 from buildmparser.items import BuildmparserItem
+from scrapy.loader import ItemLoader
 
 class LeroymerlinSpider(scrapy.Spider):
     name = 'leroymerlin'
@@ -17,9 +18,13 @@ class LeroymerlinSpider(scrapy.Spider):
         yield response.follow(next_page, callback=self.parse)
 
     def materials_parser(self, response: HtmlResponse):
-        url = response.url
-        name = response.xpath("//h1/text()").extract_first()
-        avalability = response.xpath("//uc-pdp-card-ga-enriched[@class='card-data']//uc-stock-availability/text()").extract()
-        params_list = response.xpath("//div[@class='def-list__group']").extract()
-        photo_list = response.xpath("//picture[contains(@id,'picture-box-id-generated')]/source[1]/@data-origin")
-        yield BuildmparserItem(name=name,url=url,avalability=avalability,params_list=params_list,photo_list=photo_list)
+        loader = ItemLoader(item=BuildmparserItem(),response=response)
+        loader.add_value('url',response.url)
+        loader.add_xpath('name',"//h1/text()")
+        loader.add_xpath('photo_list',"//source[@media=' only screen and (min-width: 1024px)']/@srcset")
+        loader.add_xpath('avalability',"//uc-pdp-card-ga-enriched[@class='card-data']//uc-stock-availability/text()")
+        loader.add_xpath('params_list',"//div[@class='def-list__group']")
+        #loader.add_xpath('photo_list',"//picture[contains(@id,'picture-box-id-generated')]/source[1]/@data-origin")
+        #loader.add_xpath('photo_list',"//img[@slot='thumbs']/@src")
+        yield loader.load_item()
+        #yield BuildmparserItem(name=name,url=url,avalability=avalability,params_list=params_list,photo_list=photo_list)

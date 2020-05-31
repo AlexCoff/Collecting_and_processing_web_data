@@ -23,6 +23,7 @@ USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101 Firef
 ROBOTSTXT_OBEY = False
 LOG_ENABLED = True
 LOG_LEVEL = 'DEBUG'
+IMAGES_STORE = './Lesson-6/images'
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 CONCURRENT_REQUESTS = 32
@@ -69,6 +70,7 @@ COOKIES_ENABLED = True
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     'buildmparser.pipelines.BuildmparserPipeline': 300,
+    'buildmparser.pipelines.LeroyPhotoPipelines': 200,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
