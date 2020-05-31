@@ -1,15 +1,14 @@
 from scrapy.crawler import CrawlerProcess
 from scrapy.settings import Settings
 
-from bookparser import settings
-from bookparser.spiders.labirintru import LabirintruSpider
-from bookparser.spiders.book24ru import Book24ruSpider
+from buildmparser import settings
+from buildmparser.spiders.leroymerlin import LeroymerlinSpider
 
 if __name__ == '__main__':
     crawler_settings = Settings()
     crawler_settings.setmodule(settings)
     process = CrawlerProcess(settings=crawler_settings)
 
-    process.crawl(LabirintruSpider,book_name = 'java')
+    process.crawl(LeroymerlinSpider,search_item = 'фильтр для воды')
 
     process.start()
