@@ -37,6 +37,6 @@ class LeroyPhotoPipelines(ImagesPipeline):
             item['photo_list'] = [itm[1] for itm in results if itm[0]]
         return item
 
-    def file_path(self, request, response=None, info=None):
-        img_name = str(hash(request.meta['image_name']))+'.jpg'
-        return img_name
+    #def file_path(self, request, response=None, info=None):
+    #    img_name = str(hash(request.meta['image_name']))+'.jpg'
+    #    return img_name
